@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PhaseLab · Fase i Interaccions Acústiques (CFGM)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #0b1120;
+      color: #e2e8f0;
+      overflow-x: hidden;
+    }
+    /* Sliders personalitzats estil consola d'àudio */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 999px;
+      background: #1e293b;
+      border: 1px solid #334155;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      margin-top: -6px;
+      background-color: #38bdf8;
+      height: 16px;
+      width: 16px;
+      border-radius: 999px;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+      transition: transform 0.15s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    input[type="range"]::-moz-range-track {
+      height: 6px;
+      border-radius: 999px;
+      background: #1e293b;
+      border: 1px solid #334155;
+    }
+    input[type="range"]::-moz-range-thumb {
+      background-color: #38bdf8;
+      height: 16px;
+      width: 16px;
+      border-radius: 999px;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+    }
+
+    /* Estils d'impressió nets per a lliurament d'informe PDF */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 14mm;
+      }
+      body {
+        background: #ffffff !important;
+        color: #0f172a !important;
+        font-size: 11pt;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-only {
+        display: block !important;
+      }
+      .print-card {
+        background: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: none !important;
+        color: #0f172a !important;
+        break-inside: avoid;
+      }
+      .print-muted {
+        color: #475569 !important;
+      }
+      .print-value {
+        color: #0f172a !important;
+      }
+      canvas {
+        max-width: 100% !important;
+        border: 1px solid #94a3b8 !important;
+        background: #0f172a !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen antialiased selection:bg-sky-500/30 selection:text-sky-200">
+
+  <!-- CAPÇALERA EXCLUSIVA D'IMPRESSIÓ (PDF) -->
+  <div class="print-only hidden mb-6 pb-4 border-b-2 border-slate-800">
+    <div class="flex justify-between items-start">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-wider text-slate-500">CFGM Instal·lacions de Telecomunicacions · Megafonia i Sonorització</p>
+        <h1 class="text-2xl font-extrabold text-slate-900 mt-1">Informe Tècnic: Fase i Interaccions Acústiques</h1>
+      </div>
+      <div class="text-right text-xs text-slate-600">
+        <p><strong>Data:</strong> <span id="print-date"></span></p>
+        <p><strong>Alumne/a:</strong> <span id="print-student">No especificat</span></p>
+        <p><strong>Grup / Pràctica:</strong> <span id="print-group">No especificat</span></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- BARRA SUPERIOR DE NAVEGACIÓ I ACCIONS -->
+  <header class="no-print sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20 shrink-0">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h3l3-8 6 16 3-8h3" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">PhaseLab · Fase i Interaccions</h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-sky-500/15 text-sky-300 border border-sky-500/30">CFGM So</span>
+          </div>
+          <p class="text-xs text-slate-400">Laboratori interactiu d'alineació acústica, polaritat i filtre pinta</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 sm:gap-3">
+        <button id="btn-open-ai" type="button" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 shadow-md shadow-indigo-500/20 transition cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+          </svg>
+          <span>Assistent IA Gemini</span>
+          <span id="ai-status-dot" class="w-2 h-2 rounded-full bg-amber-400" title="Clau API pendent"></span>
+        </button>
+
+        <button id="btn-print" type="button" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 transition cursor-pointer">
+          <svg class="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5zm-3 0h.008v.008H15V10.5z" />
+          </svg>
+          <span class="hidden md:inline">Imprimeix / Desa informe (PDF)</span>
+          <span class="md:hidden">PDF</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-5 space-y-6">
+
+    <!-- IDENTIFICACIÓ D'ALUMNE PER A L'INFORME -->
+    <section class="no-print bg-slate-900/60 border border-slate-800 rounded-2xl p-3.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div class="flex items-center gap-2 text-xs text-slate-400">
+        <svg class="w-4 h-4 text-sky-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+        </svg>
+        <span>Dades per a l'exportació de l'informe de pràctica:</span>
+      </div>
+      <div class="flex flex-col sm:flex-row gap-2.5 sm:w-auto w-full">
+        <input id="input-student" type="text" placeholder="Nom i cognoms de l'alumne/a" class="bg-slate-950 border border-slate-700/80 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500" />
+        <input id="input-group" type="text" placeholder="Grup / Sessió (ex: 2n IT · P04)" class="bg-slate-950 border border-slate-700/80 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500" />
+      </div>
+    </section>
+
+    <!-- BLOC 1: SELECTOR DE PERFIL O ESCENARI REAL -->
+    <section class="print-card bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+        <div>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-sky-400">1. Escenari Tècnic d'Instal·lació</span>
+          <h2 class="text-base sm:text-lg font-bold text-white print-value">Selecciona un cas d'ús real en sonorització</h2>
+        </div>
+        <span class="no-print text-xs text-slate-400">Adapta automàticament distàncies, freqüències i guia de taller</span>
+      </div>
+
+      <div id="scenario-grid" class="no-print grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        <!-- Omplert dinàmicament per JS -->
+      </div>
+
+      <!-- Fitxa contextual de l'escenari actiu -->
+      <div class="bg-slate-950/80 print-card border border-slate-800/90 rounded-xl p-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+          <h3 id="scenario-title" class="text-sm sm:text-base font-bold text-sky-300 print-value"></h3>
+          <span id="scenario-badge" class="text-xs font-mono px-2.5 py-0.5 rounded-md bg-sky-500/10 text-sky-300 border border-sky-500/20"></span>
+        </div>
+        <p id="scenario-desc" class="text-xs sm:text-sm text-slate-300 print-muted leading-relaxed mb-3"></p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-slate-800/80 text-xs">
+          <div class="flex items-start gap-2">
+            <span class="font-semibold text-emerald-400 shrink-0">Objectiu tècnic:</span>
+            <span id="scenario-goal" class="text-slate-300 print-muted"></span>
+          </div>
+          <div class="flex items-start gap-2">
+            <span class="font-semibold text-amber-400 shrink-0">Consell de muntatge:</span>
+            <span id="scenario-tip" class="text-slate-300 print-muted"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BLOCS 2 I 3: CALCULADORA PRÀCTICA + SIMULADOR VISUAL INTERACTIU -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+      <!-- BLOC 2: CONFIGURADOR I CALCULADORA TÈCNICA (5 columnes) -->
+      <section class="lg:col-span-5 print-card bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-5">
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">2. Configurador i Càlculs</span>
+            <h2 class="text-base sm:text-lg font-bold text-white print-value">Paràmetres de Camp i Processador</h2>
+          </div>
+          <button id="btn-reset-scenario" type="button" class="no-print text-xs text-slate-400 hover:text-white underline underline-offset-2 cursor-pointer">
+            Restaura valors
+          </button>
+        </div>
+
+        <!-- Entrades numèriques -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-slate-950/70 print-card border border-slate-800 rounded-xl p-3">
+            <label for="inp-d1" class="block text-[11px] font-medium text-sky-400 mb-1">Distància Font A (m)</label>
+            <input id="inp-d1" type="number" step="0.05" min="0.01" max="100" value="4.00" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm font-mono text-white print-value focus:outline-none focus:border-sky-500" />
+            <span class="text-[10px] text-slate-500 block mt-1">Ex: Satèl·lit / Micro 1</span>
+          </div>
+
+          <div class="bg-slate-950/70 print-card border border-slate-800 rounded-xl p-3">
+            <label for="inp-d2" class="block text-[11px] font-medium text-amber-400 mb-1">Distància Font B (m)</label>
+            <input id="inp-d2" type="number" step="0.05" min="0.01" max="100" value="5.15" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm font-mono text-white print-value focus:outline-none focus:border-amber-500" />
+            <span class="text-[10px] text-slate-500 block mt-1">Ex: Subgreu / Reflexió</span>
+          </div>
+
+          <div class="bg-slate-950/70 print-card border border-slate-800 rounded-xl p-3">
+            <label for="inp-freq" class="block text-[11px] font-medium text-slate-300 print-muted mb-1">Freqüència f (Hz)</label>
+            <input id="inp-freq" type="number" step="5" min="20" max="5000" value="100" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm font-mono text-white print-value focus:outline-none focus:border-sky-500" />
+            <span class="text-[10px] text-slate-500 block mt-1">Tall crossover o to de prova</span>
+          </div>
+
+          <div class="bg-slate-950/70 print-card border border-slate-800 rounded-xl p-3">
+            <label for="inp-temp" class="block text-[11px] font-medium text-slate-300 print-muted mb-1">Temperatura (°C)</label>
+            <input id="inp-temp" type="number" step="1" min="-10" max="45" value="20" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm font-mono text-white print-value focus:outline-none focus:border-sky-500" />
+            <span class="text-[10px] text-slate-500 block mt-1">c = <strong id="out-c" class="text-slate-300">343.4</strong> m/s</span>
+          </div>
+        </div>
+
+        <!-- Ajust de DSP i Polaritat -->
+        <div class="bg-slate-950/70 print-card border border-slate-800 rounded-xl p-3.5 space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <label for="inp-delay" class="text-xs font-semibold text-slate-200 print-value">Retard DSP a Font A (ms)</label>
+              <p class="text-[11px] text-slate-400">Compensa el temps de vol de la font més propera</p>
+            </div>
+            <button id="btn-auto-align" type="button" class="no-print px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 border border-emerald-500/30 transition cursor-pointer shrink-0">
+              Auto-alinea DSP
+            </button>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <input id="inp-delay" type="number" step="0.05" min="0" max="60" value="0.00" class="w-28 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm font-mono text-emerald-300 print-value focus:outline-none focus:border-emerald-500" />
+            <div class="flex-1 flex items-center justify-end gap-2">
+              <span class="text-xs text-slate-400">Polaritat Font B:</span>
+              <button id="btn-polarity" type="button" aria-pressed="false" class="px-3 py-1.5 rounded-lg text-xs font-bold font-mono bg-slate-800 text-slate-200 border border-slate-600 hover:border-slate-500 transition cursor-pointer">
+                0° NORMAL
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Resultats Tècnics Calculats a l'instant -->
+        <div class="space-y-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Resultats d'Anàlisi Acústica</h3>
+
+          <div class="grid grid-cols-2 gap-2.5">
+            <div class="bg-slate-950 print-card border border-slate-800 rounded-xl p-3">
+              <span class="text-[11px] text-slate-400 block">Diferència efectiva (Δd / Δt)</span>
+              <div class="mt-1 flex items-baseline gap-1.5">
+                <span id="res-dt" class="text-lg font-extrabold font-mono text-white print-value">3.35 ms</span>
+                <span id="res-dd" class="text-xs font-mono text-slate-400">(1.15 m)</span>
+              </div>
+            </div>
+
+            <div class="bg-slate-950 print-card border border-slate-800 rounded-xl p-3">
+              <span class="text-[11px] text-slate-400 block">Longitud d'ona (λ a f)</span>
+              <div class="mt-1 flex items-baseline gap-1.5">
+                <span id="res-lambda" class="text-lg font-extrabold font-mono text-sky-300 print-value">3.43 m</span>
+                <span id="res-period" class="text-xs font-mono text-slate-400">(T: 10.0 ms)</span>
+              </div>
+            </div>
+
+            <div class="bg-slate-950 print-card border border-slate-800 rounded-xl p-3">
+              <span class="text-[11px] text-slate-400 block">Desfasament resultant (Δφ)</span>
+              <div class="mt-1 flex items-baseline gap-1.5">
+                <span id="res-phase" class="text-xl font-extrabold font-mono text-amber-400 print-value">121°</span>
+                <span id="res-phase-raw" class="text-xs font-mono text-slate-400"></span>
+              </div>
+            </div>
+
+            <div class="bg-slate-950 print-card border border-slate-800 rounded-xl p-3">
+              <span class="text-[11px] text-slate-400 block">Suma acústica (ΔL)</span>
+              <div class="mt-1 flex items-baseline gap-1.5">
+                <span id="res-gain" class="text-xl font-extrabold font-mono text-emerald-400 print-value">+0.0 dB</span>
+                <span class="text-[10px] text-slate-400">(Màx +6 dB)</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-slate-950 print-card border border-slate-800 rounded-xl p-3 flex items-center justify-between text-xs">
+            <span class="text-slate-400">1a cancel·lació filtre pinta (f₀):</span>
+            <span id="res-comb-null" class="font-mono font-bold text-rose-300 print-value">149.3 Hz</span>
+          </div>
+
+          <!-- Diagnòstic visual -->
+          <div id="diagnostic-box" class="rounded-xl p-3.5 border text-xs leading-relaxed">
+            <p id="diagnostic-title" class="font-bold mb-0.5"></p>
+            <p id="diagnostic-text" class="opacity-90"></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- BLOC 3: SIMULADOR VISUAL INTERACTIU (7 columnes) -->
+      <section class="lg:col-span-7 print-card bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-sky-400">3. Simulador Visual en Temps Real</span>
+            <h2 class="text-base sm:text-lg font-bold text-white print-value">Superposició d'Ones, Fasors i Filtre Pinta</h2>
+          </div>
+
+          <div class="no-print flex items-center gap-2">
+            <button id="btn-toggle-anim" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer">
+              <span id="anim-icon">⏸</span>
+              <span id="anim-label">Pausa ona</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Controls lliscants en temps real -->
+        <div class="no-print grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-950/70 border border-slate-800 rounded-xl p-3.5">
+          <div>
+            <div class="flex justify-between text-xs mb-1.5">
+              <label for="sld-delay" class="text-slate-300 font-medium">Retard DSP (Font A)</label>
+              <span id="lbl-sld-delay" class="font-mono font-bold text-emerald-400">0.00 ms</span>
+            </div>
+            <input id="sld-delay" type="range" min="0" max="40" step="0.05" value="0" class="w-full" />
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs mb-1.5">
+              <label for="sld-freq" class="text-slate-300 font-medium">Freqüència prova</label>
+              <span id="lbl-sld-freq" class="font-mono font-bold text-sky-400">100 Hz</span>
+            </div>
+            <input id="sld-freq" type="range" min="30" max="2000" step="5" value="100" class="w-full" />
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs mb-1.5">
+              <label for="sld-ratio" class="text-slate-300 font-medium">Nivell relatiu Font B</label>
+              <span id="lbl-sld-ratio" class="font-mono font-bold text-amber-400">100%</span>
+            </div>
+            <input id="sld-ratio" type="range" min="0" max="100" step="5" value="100" class="w-full" />
+          </div>
+        </div>
+
+        <!-- Llegenda visual -->
+        <div class="flex flex-wrap items-center justify-between gap-2 text-xs px-1">
+          <div class="flex flex-wrap items-center gap-4">
+            <span class="inline-flex items-center gap-1.5 text-slate-300 print-muted">
+              <span class="w-3 h-1 rounded-full bg-sky-400"></span> Font A (Referència)
+            </span>
+            <span class="inline-flex items-center gap-1.5 text-slate-300 print-muted">
+              <span class="w-3 h-1 rounded-full bg-amber-400"></span> Font B (Desfasada)
+            </span>
+            <span class="inline-flex items-center gap-1.5 font-semibold text-emerald-300 print-value">
+              <span class="w-3 h-1.5 rounded-full bg-emerald-400"></span> Suma Resultant (A + B)
+            </span>
+          </div>
+          <span class="text-[11px] text-slate-400">Escala suma: ±2.0 (fins a +6 dB)</span>
+        </div>
+
+        <!-- Canvas 1: Domini del temps + Diagrama Fasorial -->
+        <div class="relative rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
+          <canvas id="canvas-wave" class="w-full h-56 sm:h-64 block"></canvas>
+        </div>
+
+        <!-- Canvas 2: Resposta en Freqüència (Comb Filtering) -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between text-xs px-1">
+            <span class="font-semibold text-slate-300 print-value">Resposta en Freqüència (Efecte Filtre Pinta / Comb Filter)</span>
+            <span class="text-[11px] text-slate-400">20 Hz — 5 kHz · Línia vertical = freqüència f</span>
+          </div>
+          <div class="relative rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
+            <canvas id="canvas-comb" class="w-full h-44 sm:h-48 block"></canvas>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- BLOC 4: MODAL / PANELL DESPLEGABLE TUTOR IA GEMINI (BYOK) -->
+  <div id="ai-modal" class="no-print fixed inset-0 z-50 hidden">
+    <!-- Fons fosc -->
+    <div id="ai-backdrop" class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"></div>
+
+    <!-- Panell lateral dret -->
+    <aside class="absolute right-0 top-0 bottom-0 w-full max-w-lg bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col">
+      <!-- Capçalera Modal -->
+      <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/95">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-300">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-sm font-bold text-white">Assistent IA Gemini</h2>
+            <p class="text-[11px] text-slate-400">Tutor tècnic de sonorització · Context sincronitzat</p>
+          </div>
+        </div>
+        <button id="btn-close-ai" type="button" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer" aria-label="Tanca">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Configuració API Key (BYOK localStorage) -->
+      <div class="p-4 bg-slate-950/70 border-b border-slate-800 space-y-2">
+        <div class="flex items-center justify-between">
+          <label for="inp-api-key" class="text-xs font-semibold text-slate-300">Clau API de Google AI Studio (BYOK)</label>
+          <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" class="text-[11px] text-sky-400 hover:underline">Obtén una clau gratuïta ↗</a>
+        </div>
+        <div class="flex gap-2">
+          <input id="inp-api-key" type="password" placeholder="Enganxa la teva API Key (AIza...)" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs font-mono text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
+          <button id="btn-save-key" type="button" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition cursor-pointer">
+            Desa
+          </button>
+          <button id="btn-clear-key" type="button" class="px-2.5 py-1.5 rounded-lg text-xs text-slate-400 hover:text-rose-300 bg-slate-800 hover:bg-slate-700 transition cursor-pointer" title="Esborra clau">
+            Esborra
+          </button>
+        </div>
+        <p id="api-key-feedback" class="text-[11px] text-slate-400">La clau es desa únicament al teu navegador (localStorage) i mai s'envia a cap servidor extern.</p>
+      </div>
+
+      <!-- Botons d'acció ràpida -->
+      <div class="p-4 border-b border-slate-800 space-y-2">
+        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Consultes ràpides sobre la teva simulació</span>
+        <div class="grid grid-cols-1 gap-2">
+          <button type="button" data-prompt-type="explain" class="ai-quick-btn text-left px-3 py-2 rounded-xl text-xs font-medium bg-slate-800/90 hover:bg-slate-800 border border-slate-700/80 text-sky-300 flex items-center justify-between transition cursor-pointer">
+            <span>1. Explica-m'ho adaptat al meu perfil</span>
+            <span>→</span>
+          </button>
+          <button type="button" data-prompt-type="challenge" class="ai-quick-btn text-left px-3 py-2 rounded-xl text-xs font-medium bg-slate-800/90 hover:bg-slate-800 border border-slate-700/80 text-amber-300 flex items-center justify-between transition cursor-pointer">
+            <span>2. Genera un cas pràctic o repte</span>
+            <span>→</span>
+          </button>
+          <button type="button" data-prompt-type="audit" class="ai-quick-btn text-left px-3 py-2 rounded-xl text-xs font-medium bg-slate-800/90 hover:bg-slate-800 border border-slate-700/80 text-emerald-300 flex items-center justify-between transition cursor-pointer">
+            <span>3. Audita els meus paràmetres actuals</span>
+            <span>→</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Àrea de resposta de l'IA -->
+      <div id="ai-output-container" class="flex-1 overflow-y-auto p-4 space-y-3 text-xs sm:text-sm leading-relaxed text-slate-200">
+        <div class="bg-slate-800/40 border border-slate-800 rounded-xl p-3.5 text-slate-400 text-xs">
+          <p class="font-semibold text-slate-300 mb-1">Com et puc ajudar?</p>
+          <p>Introdueix la teva clau API de Google AI Studio i prem qualsevol dels 3 botons ràpids o escriu el teu dubte. Rebré automàticament l'escenari actiu, les distàncies, el retard DSP, la polaritat i el desfasament actuals.</p>
+        </div>
+      </div>
+
+      <!-- Entrada de pregunta lliure -->
+      <form id="ai-form" class="p-3.5 border-t border-slate-800 bg-slate-900 flex gap-2">
+        <input id="ai-user-input" type="text" placeholder="Pregunta un dubte sobre fase, polaritat o filtre pinta..." class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
+        <button id="ai-send-btn" type="submit" class="px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition cursor-pointer shrink-0">
+          Envia
+        </button>
+      </form>
+    </aside>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // ==========================================
+      // 1. DADES DELS 4 ESCENARIS TÈCNICS (CFGM)
+      // ==========================================
+      const SCENARIOS = [
+        {
+          id: 'sub-top',
+          shortTitle: 'Subgreu + Satèl·lit',
+          badge: 'Crossover 100 Hz',
+          title: 'Alineació de Fase entre Subgreus i Satèl·lits (PA Principal)',
+          desc: 'Els subgreus solen col·locar-se a terra davant l’escenari mentre que els satèl·lits (tops) van elevats o volats. Aquesta diferència física de distància provoca un desfasament a la freqüència de tall (crossover) que pot restar fins a 6 dB o cancel·lar els greus.',
+          goal: 'Aconseguir una suma coherent (+6 dB) a la freqüència de tall (100 Hz) aplicant retard DSP al satèl·lit o invertint polaritat.',
+          tip: 'Mesura amb làser des del punt d’escolta fins al centre acústic de cada caixa i iguala temps de vol al processador.',
+          defaults: { d1: 4.00, d2: 5.15, freq: 100, temp: 20, delay: 0.00, polarityInv: false, ratio: 100 }
+        },
+        {
+          id: 'comb-wall',
+          shortTitle: 'Filtre Pinta (Reflexió)',
+          badge: 'Paret / Terra',
+          title: 'Interferència per Reflexió en Superfície Rígida (Comb Filtering)',
+          desc: 'Quan un altaveu es col·loca a prop d’una paret lateral o terra reflectant, l’oient rep el so directe (Font A) i, pocs mil·lisegons després, la reflexió (Font B). La suma de tots dos genera pics i valls periòdiques en freqüència (so metàl·lic o buit).',
+          goal: 'Observar com una diferència de camí de 0,85 m crea cancel·lacions profundes cada 404 Hz a l’espectre.',
+          tip: 'En instal·lacions fixes, separa els altaveus de parets rígides o orienta la cobertura lluny de superfícies reflectants.',
+          defaults: { d1: 3.00, d2: 3.85, freq: 400, temp: 20, delay: 0.00, polarityInv: false, ratio: 80 }
+        },
+        {
+          id: 'dual-mic',
+          shortTitle: 'Microfonia Dual (3:1)',
+          badge: 'Directe / Gravació',
+          title: 'Captura amb Dos Micròfons d’una Mateixa Font Sonora',
+          desc: 'En sonoritzar un amplificador de guitarra o una caixa de bateria amb dos micròfons a diferent distància, en sumar els canals en mono apareix cancel·lació de fase en freqüències mitjanes i agudes.',
+          goal: 'Comprovar com 17 cm de diferència cancel·len gairebé per complet 1 kHz i experimentar amb el botó d’inversió de polaritat (Ø).',
+          tip: 'Aplica la Regla 3:1: la distància entre dos micròfons ha de ser com a mínim 3 vegades la distància de cada micro a la seva font.',
+          defaults: { d1: 0.05, d2: 0.22, freq: 1000, temp: 22, delay: 0.00, polarityInv: false, ratio: 95 }
+        },
+        {
+          id: 'delay-tower',
+          shortTitle: 'Torre de Retard (Delay)',
+          badge: 'Sala / Auditori',
+          title: 'Sincronització de Línia de Retard (Torre Delay) en Recinte Llarg',
+          desc: 'En recintes allargats, s’instal·len altaveus de reforç a mig aforament. Si no s’aplica retard electrònic, el públic posterior sent primer l’altaveu proper (Font A) i després la PA principal (Font B), perdent intel·ligibilitat.',
+          goal: 'Alinear la torre de retard amb la PA principal (~35 ms) i afegir 10-15 ms extra per mantenir la imatge sonora a l’escenari (Efecte Haas).',
+          tip: 'Calcula t = Δd / c. Recorda que la velocitat del so varia amb la temperatura de la sala (0,606 m/s per cada °C).',
+          defaults: { d1: 2.00, d2: 14.00, freq: 500, temp: 20, delay: 20.00, polarityInv: false, ratio: 90 }
+        }
+      ];
+
+      // ==========================================
+      // 2. ESTAT GLOBAL DE L'APLICACIÓ
+      // ==========================================
+      const state = {
+        scenarioId: 'sub-top',
+        d1: 4.00,
+        d2: 5.15,
+        freq: 100,
+        temp: 20,
+        delay: 0.00,
+        polarityInv: false,
+        ratio: 100,
+        animPlaying: true,
+        animPhaseOffset: 0
+      };
+
+      const STORAGE_KEY_API = 'phaselab_gemini_api_key';
+      const STORAGE_KEY_STUDENT = 'phaselab_student_meta';
+
+      // ==========================================
+      // 3. REFERÈNCIES AL DOM
+      // ==========================================
+      const el = {
+        scenarioGrid: document.getElementById('scenario-grid'),
+        scenarioTitle: document.getElementById('scenario-title'),
+        scenarioBadge: document.getElementById('scenario-badge'),
+        scenarioDesc: document.getElementById('scenario-desc'),
+        scenarioGoal: document.getElementById('scenario-goal'),
+        scenarioTip: document.getElementById('scenario-tip'),
+
+        inpD1: document.getElementById('inp-d1'),
+        inpD2: document.getElementById('inp-d2'),
+        inpFreq: document.getElementById('inp-freq'),
+        inpTemp: document.getElementById('inp-temp'),
+        inpDelay: document.getElementById('inp-delay'),
+        outC: document.getElementById('out-c'),
+        btnPolarity: document.getElementById('btn-polarity'),
+        btnAutoAlign: document.getElementById('btn-auto-align'),
+        btnResetScenario: document.getElementById('btn-reset-scenario'),
+
+        resDt: document.getElementById('res-dt'),
+        resDd: document.getElementById('res-dd'),
+        resLambda: document.getElementById('res-lambda'),
+        resPeriod: document.getElementById('res-period'),
+        resPhase: document.getElementById('res-phase'),
+        resPhaseRaw: document.getElementById('res-phase-raw'),
+        resGain: document.getElementById('res-gain'),
+        resCombNull: document.getElementById('res-comb-null'),
+        diagnosticBox: document.getElementById('diagnostic-box'),
+        diagnosticTitle: document.getElementById('diagnostic-title'),
+        diagnosticText: document.getElementById('diagnostic-text'),
+
+        sldDelay: document.getElementById('sld-delay'),
+        lblSldDelay: document.getElementById('lbl-sld-delay'),
+        sldFreq: document.getElementById('sld-freq'),
+        lblSldFreq: document.getElementById('lbl-sld-freq'),
+        sldRatio: document.getElementById('sld-ratio'),
+        lblSldRatio: document.getElementById('lbl-sld-ratio'),
+        btnToggleAnim: document.getElementById('btn-toggle-anim'),
+        animIcon: document.getElementById('anim-icon'),
+        animLabel: document.getElementById('anim-label'),
+
+        canvasWave: document.getElementById('canvas-wave'),
+        canvasComb: document.getElementById('canvas-comb'),
+
+        btnPrint: document.getElementById('btn-print'),
+        inpStudent: document.getElementById('input-student'),
+        inpGroup: document.getElementById('input-group'),
+        printDate: document.getElementById('print-date'),
+        printStudent: document.getElementById('print-student'),
+        printGroup: document.getElementById('print-group'),
+
+        btnOpenAi: document.getElementById('btn-open-ai'),
+        btnCloseAi: document.getElementById('btn-close-ai'),
+        aiModal: document.getElementById('ai-modal'),
+        aiBackdrop: document.getElementById('ai-backdrop'),
+        aiStatusDot: document.getElementById('ai-status-dot'),
+        inpApiKey: document.getElementById('inp-api-key'),
+        btnSaveKey: document.getElementById('btn-save-key'),
+        btnClearKey: document.getElementById('btn-clear-key'),
+        apiKeyFeedback: document.getElementById('api-key-feedback'),
+        aiOutputContainer: document.getElementById('ai-output-container'),
+        aiForm: document.getElementById('ai-form'),
+        aiUserInput: document.getElementById('ai-user-input'),
+        aiSendBtn: document.getElementById('ai-send-btn')
+      };
+
+      // ==========================================
+      // 4. MOTOR DE CÀLCUL ACÚSTIC
+      // ==========================================
+      function computeAcoustics() {
+        const c = 331.3 + 0.606 * state.temp; // m/s
+        const tA_ms = (state.d1 / c) * 1000 + state.delay;
+        const tB_ms = (state.d2 / c) * 1000;
+        const dt_ms = tB_ms - tA_ms; // positiu si B arriba més tard que A
+        const absDt_ms = Math.abs(dt_ms);
+        const effDd_m = (absDt_ms / 1000) * c;
+
+        const lambda_m = c / state.freq;
+        const period_ms = 1000 / state.freq;
+
+        // Desfasament en graus [0, 360)
+        const timePhaseDeg = 360 * state.freq * (dt_ms / 1000);
+        const polPhaseDeg = state.polarityInv ? 180 : 0;
+        const phase360 = (((timePhaseDeg + polPhaseDeg) % 360) + 360) % 360;
+        const phaseWrapped = phase360 > 180 ? phase360 - 360 : phase360; // [-180, +180]
+        const absPhase = Math.abs(phaseWrapped);
+
+        // Amplituds relatives (A1 = 1, A2 = r)
+        const r = state.ratio / 100;
+        const rad = (phase360 * Math.PI) / 180;
+        const sumAmp = Math.sqrt(1 + r * r + 2 * r * Math.cos(rad));
+        const gainDb = 20 * Math.log10(Math.max(sumAmp, 0.001));
+
+        // Freqüències de filtre pinta
+        let firstNullHz = null;
+        let combSpacingHz = null;
+        if (absDt_ms > 0.01) {
+          combSpacingHz = 1000 / absDt_ms;
+          firstNullHz = state.polarityInv ? combSpacingHz : combSpacingHz / 2;
+        }
+
+        return {
+          c,
+          tA_ms,
+          tB_ms,
+          dt_ms,
+          absDt_ms,
+          effDd_m,
+          lambda_m,
+          period_ms,
+          phase360,
+          phaseWrapped,
+          absPhase,
+          r,
+          sumAmp,
+          gainDb,
+          firstNullHz,
+          combSpacingHz
+        };
+      }
+
+      // ==========================================
+      // 5. RENDERITZAT D'ESCENARIS I UI
+      // ==========================================
+      function renderScenarioCards() {
+        el.scenarioGrid.innerHTML = '';
+        SCENARIOS.forEach((sc) => {
+          const isActive = sc.id === state.scenarioId;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = isActive
+            ? 'text-left p-3.5 rounded-xl border-2 border-sky-500 bg-sky-500/10 shadow-md shadow-sky-500/10 transition cursor-pointer'
+            : 'text-left p-3.5 rounded-xl border border-slate-800 bg-slate-950/70 hover:border-slate-700 hover:bg-slate-900 transition cursor-pointer';
+
+          btn.innerHTML = `
+            <div class="flex items-center justify-between gap-1 mb-1">
+              <span class="text-xs font-bold ${isActive ? 'text-white' : 'text-slate-200'}">${sc.shortTitle}</span>
+              <span class="text-[10px] font-mono px-1.5 py-0.5 rounded ${isActive ? 'bg-sky-500/20 text-sky-300' : 'bg-slate-800 text-slate-400'}">${sc.badge}</span>
+            </div>
+            <p class="text-[11px] text-slate-400 line-clamp-2">${sc.title}</p>
+          `;
+          btn.addEventListener('click', () => loadScenario(sc.id));
+          el.scenarioGrid.appendChild(btn);
+        });
+      }
+
+      function loadScenario(id) {
+        const sc = SCENARIOS.find((s) => s.id === id);
+        if (!sc) return;
+        state.scenarioId = sc.id;
+        Object.assign(state, sc.defaults);
+
+        el.scenarioTitle.textContent = sc.title;
+        el.scenarioBadge.textContent = sc.badge;
+        el.scenarioDesc.textContent = sc.desc;
+        el.scenarioGoal.textContent = sc.goal;
+        el.scenarioTip.textContent = sc.tip;
+
+        renderScenarioCards();
+        syncControlsFromState();
+        updateAll();
+      }
+
+      function syncControlsFromState() {
+        el.inpD1.value = state.d1.toFixed(2);
+        el.inpD2.value = state.d2.toFixed(2);
+        el.inpFreq.value = Math.round(state.freq);
+        el.inpTemp.value = state.temp;
+        el.inpDelay.value = state.delay.toFixed(2);
+
+        el.sldDelay.value = Math.min(40, state.delay);
+        el.lblSldDelay.textContent = `${state.delay.toFixed(2)} ms`;
+
+        el.sldFreq.value = Math.min(2000, Math.max(30, state.freq));
+        el.lblSldFreq.textContent = `${Math.round(state.freq)} Hz`;
+
+        el.sldRatio.value = state.ratio;
+        el.lblSldRatio.textContent = `${state.ratio}%`;
+
+        el.btnPolarity.setAttribute('aria-pressed', String(state.polarityInv));
+        if (state.polarityInv) {
+          el.btnPolarity.textContent = 'Ø 180° INVERTIDA';
+          el.btnPolarity.className = 'px-3 py-1.5 rounded-lg text-xs font-bold font-mono bg-rose-500/20 text-rose-300 border border-rose-500/50 transition cursor-pointer';
+        } else {
+          el.btnPolarity.textContent = '0° NORMAL';
+          el.btnPolarity.className = 'px-3 py-1.5 rounded-lg text-xs font-bold font-mono bg-slate-800 text-slate-200 border border-slate-600 hover:border-slate-500 transition cursor-pointer';
+        }
+      }
+
+      function updateAll() {
+        const m = computeAcoustics();
+
+        el.outC.textContent = m.c.toFixed(1);
+        el.resDt.textContent = `${m.absDt_ms.toFixed(2)} ms`;
+        el.resDd.textContent = `(${m.effDd_m.toFixed(2)} m)`;
+        el.resLambda.textContent = `${m.lambda_m.toFixed(2)} m`;
+        el.resPeriod.textContent = `(T: ${m.period_ms.toFixed(2)} ms)`;
+
+        const signStr = m.phaseWrapped > 0.5 ? '+' : '';
+        el.resPhase.textContent = `${signStr}${Math.round(m.phaseWrapped)}°`;
+        el.resPhaseRaw.textContent = `(${Math.round(m.phase360)}°)`;
+
+        const gainSign = m.gainDb > 0.05 ? '+' : '';
+        el.resGain.textContent = m.gainDb <= -40 ? '-∞ dB' : `${gainSign}${m.gainDb.toFixed(1)} dB`;
+
+        if (m.firstNullHz && m.firstNullHz <= 20000) {
+          el.resCombNull.textContent = `${m.firstNullHz.toFixed(1)} Hz (cada ${m.combSpacingHz.toFixed(1)} Hz)`;
+        } else {
+          el.resCombNull.textContent = 'Cap (alineació temporal exacta)';
+        }
+
+        // Colors i diagnòstic segons el grau de desfasament
+        if (m.absPhase <= 60) {
+          el.resPhase.className = 'text-xl font-extrabold font-mono text-emerald-400 print-value';
+          el.resGain.className = 'text-xl font-extrabold font-mono text-emerald-400 print-value';
+          el.diagnosticBox.className = 'rounded-xl p-3.5 border text-xs leading-relaxed bg-emerald-500/10 border-emerald-500/30 text-emerald-200 print-card';
+          el.diagnosticTitle.textContent = '✓ Suma Constructiva Coherent (Zona Òptima)';
+          el.diagnosticText.textContent = `Amb un desfasament de ${Math.round(m.absPhase)}°, ambdós senyals es reforcen eficientment (${gainSign}${m.gainDb.toFixed(1)} dB). L'acoblament acústic és estable.`;
+        } else if (m.absPhase <= 120) {
+          el.resPhase.className = 'text-xl font-extrabold font-mono text-amber-400 print-value';
+          el.resGain.className = 'text-xl font-extrabold font-mono text-amber-400 print-value';
+          el.diagnosticBox.className = 'rounded-xl p-3.5 border text-xs leading-relaxed bg-amber-500/10 border-amber-500/30 text-amber-200 print-card';
+          el.diagnosticTitle.textContent = '⚠ Zona de Compromís (Acoblament Parcial)';
+          el.diagnosticText.textContent = `El desfasament de ${Math.round(m.absPhase)}° es troba al límit dels 120°. El guany de suma cau fins a ${gainSign}${m.gainDb.toFixed(1)} dB. Ajusta el retard DSP per recuperar pressió sonora.`;
+        } else {
+          el.resPhase.className = 'text-xl font-extrabold font-mono text-rose-400 print-value';
+          el.resGain.className = 'text-xl font-extrabold font-mono text-rose-400 print-value';
+          el.diagnosticBox.className = 'rounded-xl p-3.5 border text-xs leading-relaxed bg-rose-500/10 border-rose-500/30 text-rose-200 print-card';
+          el.diagnosticTitle.textContent = '✕ Cancel·lació Destructiva Crítica (> 120°)';
+          el.diagnosticText.textContent = `Les ones arriben gairebé oposades (${Math.round(m.absPhase)}°), provocant una pèrdua severa de nivell (${m.gainDb <= -40 ? '-∞' : m.gainDb.toFixed(1)} dB). Prova d'invertir la polaritat (Ø) o alinear el retard DSP.`;
+        }
+
+        drawCombCanvas(m);
+        if (!state.animPlaying) {
+          drawWaveCanvas(m);
+        }
+      }
+
+      // ==========================================
+      // 6. SIMULADOR GRÀFIC EN CANVAS (ONES + FASOR + FILTRE PINTA)
+      // ==========================================
+      function setupHiDPICanvas(canvas) {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return null;
+        if (canvas.width !== Math.round(rect.width * dpr) || canvas.height !== Math.round(rect.height * dpr)) {
+          canvas.width = Math.round(rect.width * dpr);
+          canvas.height = Math.round(rect.height * dpr);
+        }
+        const ctx = canvas.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        return { ctx, width: rect.width, height: rect.height };
+      }
+
+      function drawWaveCanvas(m) {
+        const setup = setupHiDPICanvas(el.canvasWave);
+        if (!setup) return;
+        const { ctx, width, height } = setup;
+
+        ctx.clearRect(0, 0, width, height);
+
+        // Divisió: 68% Oscil·loscopi (esquerra), 32% Diagrama Fasorial (dreta)
+        const splitX = width < 480 ? width : Math.round(width * 0.68);
+        const showPhasor = width >= 480;
+
+        // --- PART ESQUERRA: OSCIL·LOSCOPI ---
+        const padL = 32;
+        const padR = 14;
+        const waveW = splitX - padL - padR;
+        const midY = height / 2;
+        const ampScale = (height * 0.38) / 2; // ±2.0 cap dins de l'alçada
+
+        // Graella
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1;
+        [-2, -1, 0, 1, 2].forEach((lvl) => {
+          const y = midY - lvl * ampScale;
+          ctx.beginPath();
+          ctx.moveTo(padL, y);
+          ctx.lineTo(splitX - padR, y);
+          ctx.stroke();
+
+          ctx.fillStyle = '#64748b';
+          ctx.font = '10px monospace';
+          ctx.textAlign = 'right';
+          ctx.fillText(lvl === 0 ? '0' : (lvl > 0 ? `+${lvl}` : `${lvl}`), padL - 6, y + 3);
+        });
+
+        // Línia zero destacada
+        ctx.strokeStyle = '#334155';
+        ctx.beginPath();
+        ctx.moveTo(padL, midY);
+        ctx.lineTo(splitX - padR, midY);
+        ctx.stroke();
+
+        const cycles = 2.5;
+        const phaseRad = (m.phase360 * Math.PI) / 180;
+        const anim = state.animPhaseOffset;
+
+        // Ona Font A (Blau cel)
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let px = 0; px <= waveW; px += 2) {
+          const theta = (px / waveW) * cycles * 2 * Math.PI - anim;
+          const yVal = Math.sin(theta);
+          const y = midY - yVal * ampScale;
+          if (px === 0) ctx.moveTo(padL + px, y);
+          else ctx.lineTo(padL + px, y);
+        }
+        ctx.stroke();
+
+        // Ona Font B (Ambre)
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let px = 0; px <= waveW; px += 2) {
+          const theta = (px / waveW) * cycles * 2 * Math.PI - anim - phaseRad;
+          const yVal = m.r * Math.sin(theta);
+          const y = midY - yVal * ampScale;
+          if (px === 0) ctx.moveTo(padL + px, y);
+          else ctx.lineTo(padL + px, y);
+        }
+        ctx.stroke();
+
+        // Ona Suma A + B (Maragda o Vermell si hi ha cancel·lació)
+        ctx.strokeStyle = m.absPhase > 120 ? '#fb7185' : '#34d399';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        for (let px = 0; px <= waveW; px += 2) {
+          const thetaA = (px / waveW) * cycles * 2 * Math.PI - anim;
+          const thetaB = thetaA - phaseRad;
+          const yVal = Math.sin(thetaA) + m.r * Math.sin(thetaB);
+          const y = midY - yVal * ampScale;
+          if (px === 0) ctx.moveTo(padL + px, y);
+          else ctx.lineTo(padL + px, y);
+        }
+        ctx.stroke();
+
+        // --- PART DRETA: DIAGRAMA FASORIAL ---
+        if (showPhasor) {
+          ctx.strokeStyle = '#1e293b';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(splitX, 12);
+          ctx.lineTo(splitX, height - 12);
+          ctx.stroke();
+
+          const cx = splitX + (width - splitX) / 2;
+          const cy = height / 2 + 4;
+          const unitR = Math.min((width - splitX) * 0.24, height * 0.22);
+
+          // Cercles concèntrics (1x i 2x)
+          ctx.strokeStyle = '#1e293b';
+          ctx.setLineDash([3, 3]);
+          ctx.beginPath();
+          ctx.arc(cx, cy, unitR, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(cx, cy, unitR * 2, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Eixos
+          ctx.beginPath();
+          ctx.moveTo(cx - unitR * 2.1, cy);
+          ctx.lineTo(cx + unitR * 2.1, cy);
+          ctx.moveTo(cx, cy - unitR * 2.1);
+          ctx.lineTo(cx, cy + unitR * 2.1);
+          ctx.stroke();
+
+          // Vector A (0 graus, cap a la dreta)
+          const ax = cx + unitR;
+          const ay = cy;
+          drawArrow(ctx, cx, cy, ax, ay, '#38bdf8', 2.5);
+
+          // Vector B (angle -phaseRad perquè en canvas Y baixa)
+          const bx = cx + m.r * unitR * Math.cos(-phaseRad);
+          const by = cy + m.r * unitR * Math.sin(-phaseRad);
+          drawArrow(ctx, cx, cy, bx, by, '#fbbf24', 2.5);
+
+          // Vector Resultant A + B
+          const rx = cx + unitR * (1 + m.r * Math.cos(-phaseRad));
+          const ry = cy + unitR * (m.r * Math.sin(-phaseRad));
+          drawArrow(ctx, cx, cy, rx, ry, m.absPhase > 120 ? '#fb7185' : '#34d399', 3);
+
+          // Etiqueta superior
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = 'bold 10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(`FASORS (Δφ = ${Math.round(m.phaseWrapped)}°)`, cx, 18);
+        }
+      }
+
+      function drawArrow(ctx, fromX, fromY, toX, toY, color, lineWidth) {
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const len = Math.hypot(dx, dy);
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = lineWidth;
+
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.stroke();
+
+        if (len > 6) {
+          const angle = Math.atan2(dy, dx);
+          const head = 7;
+          ctx.beginPath();
+          ctx.moveTo(toX, toY);
+          ctx.lineTo(toX - head * Math.cos(angle - Math.PI / 6), toY - head * Math.sin(angle - Math.PI / 6));
+          ctx.lineTo(toX - head * Math.cos(angle + Math.PI / 6), toY - head * Math.sin(angle + Math.PI / 6));
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+
+      function drawCombCanvas(m) {
+        const setup = setupHiDPICanvas(el.canvasComb);
+        if (!setup) return;
+        const { ctx, width, height } = setup;
+
+        ctx.clearRect(0, 0, width, height);
+
+        const padL = 38;
+        const padR = 16;
+        const padT = 16;
+        const padB = 24;
+        const plotW = width - padL - padR;
+        const plotH = height - padT - padB;
+
+        const minDb = -24;
+        const maxDb = 9;
+        const dbToY = (db) => {
+          const clamped = Math.max(minDb, Math.min(maxDb, db));
+          return padT + ((maxDb - clamped) / (maxDb - minDb)) * plotH;
+        };
+
+        const minF = 20;
+        const maxF = 5000;
+        const logMin = Math.log10(minF);
+        const logMax = Math.log10(maxF);
+        const freqToX = (f) => padL + ((Math.log10(f) - logMin) / (logMax - logMin)) * plotW;
+
+        // Graella horitzontal (dB)
+        [6, 0, -6, -12, -18, -24].forEach((db) => {
+          const y = dbToY(db);
+          ctx.strokeStyle = db === 0 ? '#475569' : '#1e293b';
+          ctx.lineWidth = db === 0 ? 1.2 : 1;
+          ctx.beginPath();
+          ctx.moveTo(padL, y);
+          ctx.lineTo(padL + plotW, y);
+          ctx.stroke();
+
+          ctx.fillStyle = db === 6 ? '#34d399' : '#64748b';
+          ctx.font = '10px monospace';
+          ctx.textAlign = 'right';
+          ctx.fillText(`${db > 0 ? '+' + db : db}dB`, padL - 5, y + 3);
+        });
+
+        // Graella vertical logarítmica (Hz)
+        [20, 50, 100, 200, 500, 1000, 2000, 5000].forEach((f) => {
+          const x = freqToX(f);
+          ctx.strokeStyle = '#1e293b';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(x, padT);
+          ctx.lineTo(x, padT + plotH);
+          ctx.stroke();
+
+          ctx.fillStyle = '#64748b';
+          ctx.font = '10px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(f >= 1000 ? `${f / 1000}k` : `${f}`, x, height - 7);
+        });
+
+        // Corba de resposta en freqüència (Filtre pinta)
+        const polOffset = state.polarityInv ? Math.PI : 0;
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let px = 0; px <= plotW; px += 1.5) {
+          const f = Math.pow(10, logMin + (px / plotW) * (logMax - logMin));
+          const theta = 2 * Math.PI * f * (m.dt_ms / 1000) + polOffset;
+          const amp = Math.sqrt(1 + m.r * m.r + 2 * m.r * Math.cos(theta));
+          const db = 20 * Math.log10(Math.max(amp, 0.001));
+          const y = dbToY(db);
+          if (px === 0) ctx.moveTo(padL + px, y);
+          else ctx.lineTo(padL + px, y);
+        }
+        ctx.stroke();
+
+        // Cursor vertical de la freqüència actual
+        if (state.freq >= minF && state.freq <= maxF) {
+          const curX = freqToX(state.freq);
+          const curY = dbToY(m.gainDb);
+
+          ctx.strokeStyle = '#f59e0b';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([4, 3]);
+          ctx.beginPath();
+          ctx.moveTo(curX, padT);
+          ctx.lineTo(curX, padT + plotH);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Punt actiu sobre la corba
+          ctx.fillStyle = '#f59e0b';
+          ctx.beginPath();
+          ctx.arc(curX, curY, 4.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // Bucle d'animació suau
+      let lastFrameTime = 0;
+      function animationLoop(timestamp) {
+        if (state.animPlaying) {
+          if (lastFrameTime) {
+            const deltaSec = (timestamp - lastFrameTime) / 1000;
+            state.animPhaseOffset = (state.animPhaseOffset + deltaSec * 3.2) % (Math.PI * 2);
+          }
+          lastFrameTime = timestamp;
+          drawWaveCanvas(computeAcoustics());
+        } else {
+          lastFrameTime = 0;
+        }
+        requestAnimationFrame(animationLoop);
+      }
+
+      // ==========================================
+      // 7. ESDEVENIMENTS D'INTERACCIÓ I SINCRONITZACIÓ
+      // ==========================================
+      function bindInputs() {
+        el.inpD1.addEventListener('input', () => {
+          const v = parseFloat(el.inpD1.value);
+          if (!isNaN(v) && v >= 0) {
+            state.d1 = v;
+            updateAll();
+          }
+        });
+
+        el.inpD2.addEventListener('input', () => {
+          const v = parseFloat(el.inpD2.value);
+          if (!isNaN(v) && v >= 0) {
+            state.d2 = v;
+            updateAll();
+          }
+        });
+
+        el.inpFreq.addEventListener('input', () => {
+          const v = parseFloat(el.inpFreq.value);
+          if (!isNaN(v) && v >= 20 && v <= 20000) {
+            state.freq = v;
+            el.sldFreq.value = Math.min(2000, Math.max(30, v));
+            el.lblSldFreq.textContent = `${Math.round(v)} Hz`;
+            updateAll();
+          }
+        });
+
+        el.inpTemp.addEventListener('input', () => {
+          const v = parseFloat(el.inpTemp.value);
+          if (!isNaN(v) && v >= -20 && v <= 55) {
+            state.temp = v;
+            updateAll();
+          }
+        });
+
+        el.inpDelay.addEventListener('input', () => {
+          const v = parseFloat(el.inpDelay.value);
+          if (!isNaN(v) && v >= 0) {
+            state.delay = v;
+            el.sldDelay.value = Math.min(40, v);
+            el.lblSldDelay.textContent = `${v.toFixed(2)} ms`;
+            updateAll();
+          }
+        });
+
+        // Sliders del simulador
+        el.sldDelay.addEventListener('input', () => {
+          state.delay = parseFloat(el.sldDelay.value);
+          el.inpDelay.value = state.delay.toFixed(2);
+          el.lblSldDelay.textContent = `${state.delay.toFixed(2)} ms`;
+          updateAll();
+        });
+
+        el.sldFreq.addEventListener('input', () => {
+          state.freq = parseFloat(el.sldFreq.value);
+          el.inpFreq.value = Math.round(state.freq);
+          el.lblSldFreq.textContent = `${Math.round(state.freq)} Hz`;
+          updateAll();
+        });
+
+        el.sldRatio.addEventListener('input', () => {
+          state.ratio = parseInt(el.sldRatio.value, 10);
+          el.lblSldRatio.textContent = `${state.ratio}%`;
+          updateAll();
+        });
+
+        // Botó Polaritat
+        el.btnPolarity.addEventListener('click', () => {
+          state.polarityInv = !state.polarityInv;
+          syncControlsFromState();
+          updateAll();
+        });
+
+        // Auto-alineació DSP
+        el.btnAutoAlign.addEventListener('click', () => {
+          const c = 331.3 + 0.606 * state.temp;
+          const rawDiffMs = ((state.d2 - state.d1) / c) * 1000;
+          state.delay = Math.max(0, Number(rawDiffMs.toFixed(2)));
+          state.polarityInv = false;
+          syncControlsFromState();
+          updateAll();
+        });
+
+        // Restaura escenari
+        el.btnResetScenario.addEventListener('click', () => {
+          loadScenario(state.scenarioId);
+        });
+
+        // Pausa/Reprodueix ona
+        el.btnToggleAnim.addEventListener('click', () => {
+          state.animPlaying = !state.animPlaying;
+          el.animIcon.textContent = state.animPlaying ? '⏸' : '▶';
+          el.animLabel.textContent = state.animPlaying ? 'Pausa ona' : 'Reprodueix ona';
+          if (!state.animPlaying) {
+            drawWaveCanvas(computeAcoustics());
+          }
+        });
+
+        // Redimensionament finestra
+        window.addEventListener('resize', () => {
+          const m = computeAcoustics();
+          drawWaveCanvas(m);
+          drawCombCanvas(m);
+        });
+      }
+
+      // ==========================================
+      // 8. EXPORTACIÓ D'INFORME (PDF / PRINT)
+      // ==========================================
+      function preparePrintMetadata() {
+        const now = new Date();
+        el.printDate.textContent = now.toLocaleDateString('ca-ES', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        el.printStudent.textContent = el.inpStudent.value.trim() || 'No especificat';
+        el.printGroup.textContent = el.inpGroup.value.trim() || 'No especificat';
+      }
+
+      function initStudentStorage() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY_STUDENT) || '{}');
+          if (saved.student) el.inpStudent.value = saved.student;
+          if (saved.group) el.inpGroup.value = saved.group;
+        } catch (e) { /* ignora errors storage */ }
+
+        const saveMeta = () => {
+          try {
+            localStorage.setItem(
+              STORAGE_KEY_STUDENT,
+              JSON.stringify({ student: el.inpStudent.value, group: el.inpGroup.value })
+            );
+          } catch (e) { /* ignora */ }
+        };
+        el.inpStudent.addEventListener('input', saveMeta);
+        el.inpGroup.addEventListener('input', saveMeta);
+
+        window.addEventListener('beforeprint', preparePrintMetadata);
+        el.btnPrint.addEventListener('click', () => {
+          preparePrintMetadata();
+          window.print();
+        });
+      }
+
+      // ==========================================
+      // 9. TUTOR IA GEMINI INTEGRAT (BYOK)
+      // ==========================================
+      function getSavedApiKey() {
+        try {
+          return localStorage.getItem(STORAGE_KEY_API) || '';
+        } catch (e) {
+          return '';
+        }
+      }
+
+      function refreshApiKeyUI() {
+        const key = getSavedApiKey();
+        if (key) {
+          el.inpApiKey.value = key;
+          el.aiStatusDot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+          el.aiStatusDot.title = 'Clau API configurada';
+          el.apiKeyFeedback.textContent = '✓ Clau API desada correctament al navegador (localStorage).';
+          el.apiKeyFeedback.className = 'text-[11px] text-emerald-400';
+        } else {
+          el.inpApiKey.value = '';
+          el.aiStatusDot.className = 'w-2 h-2 rounded-full bg-amber-400';
+          el.aiStatusDot.title = 'Clau API pendent';
+          el.apiKeyFeedback.textContent = 'La clau es desa únicament al teu navegador (localStorage) i mai s’envia a cap servidor extern.';
+          el.apiKeyFeedback.className = 'text-[11px] text-slate-400';
+        }
+      }
+
+      function formatAiText(rawText) {
+        // Escapa HTML bàsic i converteix negretes i salts de línia
+        const escaped = rawText
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+        return escaped
+          .replace(/\*\*(.+?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
+          .replace(/\n\n/g, '</p><p class="mt-2.5">')
+          .replace(/\n/g, '<br>');
+      }
+
+      function appendMessage(role, contentHtml) {
+        const wrapper = document.createElement('div');
+        if (role === 'user') {
+          wrapper.className = 'bg-indigo-600/20 border border-indigo-500/30 rounded-xl p-3 text-indigo-100 text-xs ml-6';
+          wrapper.innerHTML = `<span class="font-bold text-indigo-300 block mb-0.5">Alumne/a:</span>${contentHtml}`;
+        } else if (role === 'error') {
+          wrapper.className = 'bg-rose-500/15 border border-rose-500/40 rounded-xl p-3.5 text-rose-200 text-xs';
+          wrapper.innerHTML = contentHtml;
+        } else {
+          wrapper.className = 'bg-slate-800/70 border border-slate-700/80 rounded-xl p-3.5 text-slate-200 text-xs sm:text-sm leading-relaxed';
+          wrapper.innerHTML = `<div class="flex items-center gap-1.5 text-[11px] font-bold text-sky-400 mb-1.5"><span>✦ Tutor Gemini · Megafonia i Sonorització</span></div><p>${contentHtml}</p>`;
+        }
+        el.aiOutputContainer.appendChild(wrapper);
+        el.aiOutputContainer.scrollTop = el.aiOutputContainer.scrollHeight;
+        return wrapper;
+      }
+
+      function buildHiddenContext() {
+        const sc = SCENARIOS.find((s) => s.id === state.scenarioId) || SCENARIOS[0];
+        const m = computeAcoustics();
+        return `CONTEXT TÈCNIC ACTUAL DEL SIMULADOR (CFGM Instal·lacions de Megafonia i Sonorització):
+- Escenari seleccionat: ${sc.title} (${sc.badge})
+- Distància Font A (referència): ${state.d1.toFixed(2)} m
+- Distància Font B: ${state.d2.toFixed(2)} m
+- Freqüència de prova/crossover: ${state.freq} Hz (longitud d'ona λ = ${m.lambda_m.toFixed(2)} m)
+- Temperatura ambient: ${state.temp} °C (velocitat del so c = ${m.c.toFixed(1)} m/s)
+- Retard DSP aplicat a Font A: ${state.delay.toFixed(2)} ms
+- Polaritat Font B: ${state.polarityInv ? 'INVERTIDA (Ø 180°)' : 'NORMAL (0°)'}
+- Nivell relatiu Font B respecte Font A: ${state.ratio}%
+- Diferència de temps d'arribada efectiva (Δt): ${m.absDt_ms.toFixed(2)} ms (Δd = ${m.effDd_m.toFixed(2)} m)
+- Desfasament resultant (Δφ): ${Math.round(m.phaseWrapped)}° (en 360°: ${Math.round(m.phase360)}°)
+- Guany de suma acústica (ΔL): ${m.gainDb <= -40 ? '-∞ dB (cancel·lació total)' : m.gainDb.toFixed(1) + ' dB'}
+- Primera freqüència de cancel·lació (filtre pinta): ${m.firstNullHz ? m.firstNullHz.toFixed(1) + ' Hz' : 'Cap'}`;
+      }
+
+      async function askGemini(userVisibleLabel, specificInstruction) {
+        const apiKey = getSavedApiKey();
+        if (!apiKey) {
+          appendMessage('error', '<strong>Falta la clau API:</strong> Enganxa la teva clau de Google AI Studio al camp superior i prem <em>Desa</em> abans de fer consultes.');
+          el.inpApiKey.focus();
+          return;
+        }
+
+        appendMessage('user', userVisibleLabel);
+        const loadingEl = appendMessage('ai', '<span class="animate-pulse text-slate-400">Analitzant paràmetres acústics amb Gemini 2.5 Flash...</span>');
+        el.aiSendBtn.disabled = true;
+
+        const systemInstruction = `Ets un professor tècnic especialista en sonorització, megafonia i electroacústica per a alumnes de Cicle Formatiu de Grau Mitjà (CFGM) d'Instal·lacions de Telecomunicacions.
+Respon sempre en català clar, rigorós, pràctic i motivador.
+Fes servir terminologia professional d'àudio (suma coherent, cancel·lació destructiva, polaritat Ø, retard DSP, filtre pinta / comb filtering, regla 3:1, efecte Haas).
+Basa't directament en les dades reals de la simulació que se't proporcionen.`;
+
+        const fullPrompt = `${buildHiddenContext()}\n\nTASCA SOL·LICITADA PEL ESTUDIANT:\n${specificInstruction}`;
+
+        try {
+          const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                systemInstruction: {
+                  parts: [{ text: systemInstruction }]
+                },
+                contents: [
+                  {
+                    role: 'user',
+                    parts: [{ text: fullPrompt }]
+                  }
+                ],
+                generationConfig: {
+                  temperature: 0.5,
+                  maxOutputTokens: 900
+                }
+              })
+            }
+          );
+
+          const data = await response.json();
+          if (!response.ok) {
+            const errMsg = data?.error?.message || `Error HTTP ${response.status}`;
+            throw new Error(errMsg);
+          }
+
+          const replyText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (!replyText) {
+            throw new Error('No s’ha rebut cap resposta de text del model.');
+          }
+
+          loadingEl.innerHTML = `<div class="flex items-center gap-1.5 text-[11px] font-bold text-sky-400 mb-1.5"><span>✦ Tutor Gemini · Megafonia i Sonorització</span></div><p>${formatAiText(replyText)}</p>`;
+        } catch (err) {
+          loadingEl.className = 'bg-rose-500/15 border border-rose-500/40 rounded-xl p-3.5 text-rose-200 text-xs';
+          loadingEl.innerHTML = `<strong>Error de connexió amb Gemini:</strong> ${err.message}`;
+        } finally {
+          el.aiSendBtn.disabled = false;
+          el.aiOutputContainer.scrollTop = el.aiOutputContainer.scrollHeight;
+        }
+      }
+
+      function initAiEvents() {
+        refreshApiKeyUI();
+
+        el.btnOpenAi.addEventListener('click', () => {
+          el.aiModal.classList.remove('hidden');
+        });
+        el.btnCloseAi.addEventListener('click', () => {
+          el.aiModal.classList.add('hidden');
+        });
+        el.aiBackdrop.addEventListener('click', () => {
+          el.aiModal.classList.add('hidden');
+        });
+
+        el.btnSaveKey.addEventListener('click', () => {
+          const val = el.inpApiKey.value.trim();
+          if (val) {
+            localStorage.setItem(STORAGE_KEY_API, val);
+            refreshApiKeyUI();
+          }
+        });
+
+        el.btnClearKey.addEventListener('click', () => {
+          localStorage.removeItem(STORAGE_KEY_API);
+          refreshApiKeyUI();
+        });
+
+        document.querySelectorAll('.ai-quick-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const type = btn.getAttribute('data-prompt-type');
+            if (type === 'explain') {
+              askGemini(
+                "Explica-m'ho adaptat al meu perfil",
+                "Explica de manera clara i visual què està passant físicament i acústicament en aquest escenari concret amb els valors actuals, per què es produeix aquest desfasament i com afecta el so que percep el públic."
+              );
+            } else if (type === 'challenge') {
+              askGemini(
+                'Genera un cas pràctic o repte',
+                "Proposa un repte pràctic de taller o muntatge real basat en l'escenari actual on l'alumne hagi de modificar valors (distàncies, retard DSP, polaritat o freqüència) per resoldre un problema d'interferència. No donis la solució immediata, dona pistes perquè ho comprovi al simulador."
+              );
+            } else if (type === 'audit') {
+              askGemini(
+                'Audita els meus paràmetres actuals',
+                "Fes una auditoria tècnica dels paràmetres actuals configurats per l'alumne: valora si la suma acústica és correcta o hi ha cancel·lació/filtre pinta, i indica pas a pas quins ajustos exactes de retard DSP o polaritat caldria aplicar per optimitzar la instal·lació."
+              );
+            }
+          });
+        });
+
+        el.aiForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const q = el.aiUserInput.value.trim();
+          if (!q) return;
+          el.aiUserInput.value = '';
+          askGemini(q, q);
+        });
+      }
+
+      // ==========================================
+      // 10. INICIALITZACIÓ
+      // ==========================================
+      bindInputs();
+      initStudentStorage();
+      initAiEvents();
+      loadScenario('sub-top');
+      requestAnimationFrame(animationLoop);
+    })();
+  </script>
+</body>
+</html>
